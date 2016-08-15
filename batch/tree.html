@@ -1,0 +1,222 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>d3实现批次管理流程图</title>
+	<style>
+
+body{
+	width:960px;
+	margin:10px auto;
+}
+circle{
+  fill:white;
+  stroke:steelblue;  
+  stroke-width:2px;
+}
+line{
+  stroke:grey;
+  stroke-width:3px;
+}
+.incRect{
+	stroke:grey;
+	shape-rendering:crispEdges;
+}
+#incMatx text{
+	text-anchor:middle;
+	cursor:default;
+}
+#treesvg g text:hover, #treesvg g circle:hover{
+	cursor:pointer;
+}
+#navdiv{
+	background:#555;
+}
+#treesvg{
+	border:1px solid grey;
+}
+#labelpos{
+	color:white;
+}
+#navdiv button, #navdiv textarea{
+	vertical-align:middle;
+}
+#g_labels text{
+	text-anchor:middle;
+}
+#g_elabels text{
+	text-anchor:middle;
+	fill:red;
+	font-weight:bold;
+}
+</style>
+</head>
+<body>
+	<script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js"></script>
+	<script src="framework/d3.v3.min.js"></script>
+	<script type="text/javascript">
+		function tree(){
+			var svgW=958, svgH =460, vRad=12, tree={cx:300, cy:30, w:40, h:70};
+			tree.vis={v:0, l:'?', p:{x:tree.cx, y:tree.cy},c:[]};	
+			tree.size=1;
+			tree.glabels =[];
+			tree.incMatx =[];
+			tree.incX=500, tree.incY=30, tree.incS=20;
+			/**
+			 * 获取顶点
+			 * @method      getVertices
+			 * @author      三生
+			 * @anotherdate 2016-07-21
+			 * @return      {[type]}    [description]
+			 */
+			tree.getVertices =   function(){
+				var v =[];
+				function getVertices(t,f){	
+					v.push({v:t.v, l:t.l, p:t.p, f:f});	
+					t.c.forEach(function(d){ 
+						return getVertices(d,{v:t.v, p:t.p}); 
+					});
+				}
+				getVertices(tree.vis,{});
+				return v.sort(function(a,b){ 
+					return a.v - b.v;
+				});
+			}
+			/**
+			 * 得到边线
+			 * @method      getEdges
+			 * @author      三生
+			 * @anotherdate 2016-07-21
+			 * @return      {[type]}   [description]
+			 */
+			tree.getEdges =  function(){
+				var e =[];
+				function getEdges(_){
+					_.c.forEach(function(d){ 
+						e.push({v1:_.v, l1:_.l, p1:_.p, v2:d.v, l2:d.l, p2:d.p});
+					});
+					_.c.forEach(getEdges);
+				}
+				getEdges(tree.vis);
+				return e.sort(function(a,b){ return a.v2 - b.v2;});	
+			}
+			/**
+			 * 添加叶节点
+			 * @method      addLeaf
+			 * @author      三生
+			 * @anotherdate 2016-07-21
+			 * @param       {[type]}   _ [description]
+			 */
+			tree.addLeaf = function(_){
+				function addLeaf(t){
+					if(t.v==_){ t.c.push({v:tree.size++, l:'?', p:{},c:[]}); return; }
+					t.c.forEach(addLeaf);
+				}
+				addLeaf(tree.vis);
+				reposition(tree.vis);
+				redraw();
+			}
+			/**
+			 * 重绘
+			 * @method       redraw
+			 * @author      三生
+			 * @anotherdate 2016-07-21
+			 * @return      {[type]}   [description]
+			 */
+			redraw = function(){
+				var edges = d3.select("#g_lines").selectAll('line').data(tree.getEdges());
+				
+				edges.transition().duration(500)
+					.attr('x1',function(d){ return d.p1.x;}).attr('y1',function(d){ return d.p1.y;})
+					.attr('x2',function(d){ return d.p2.x;}).attr('y2',function(d){ return d.p2.y;})
+			
+				edges.enter().append('line')
+					.attr('x1',function(d){ return d.p1.x;}).attr('y1',function(d){ return d.p1.y;})
+					.attr('x2',function(d){ return d.p1.x;}).attr('y2',function(d){ return d.p1.y;})
+					.transition().duration(500)
+					.attr('x2',function(d){ return d.p2.x;}).attr('y2',function(d){ return d.p2.y;});
+					
+				var circles = d3.select("#g_circles").selectAll('circle').data(tree.getVertices()).attr('v',function(d){ 
+						return d.v;
+					});
+
+				circles.transition().duration(500).attr('cx',function(d){ return d.p.x;}).attr('cy',function(d){ return d.p.y;});
+				
+				circles.enter().append('circle').attr('cx',function(d){ return d.f.p.x;}).attr('cy',function(d){ return d.f.p.y;}).attr('r',vRad)
+					.on('click',function(d){return tree.addLeaf(d.v);})
+					.transition().duration(500).attr('cx',function(d){ return d.p.x;}).attr('cy',function(d){ return d.p.y;});
+					
+			}
+			/**
+			 * 获取节点数
+			 * @method      getLeafCount
+			 * @author      三生
+			 * @anotherdate 2016-07-21
+			 * @param       {[type]}     _ [description]
+			 * @return      {[type]}       [description]
+			 */
+			getLeafCount = function(_){
+				if(_.c.length ==0) return 1;
+				else return _.c.map(getLeafCount).reduce(function(a,b){ return a+b;});
+			}
+			/**
+			 * 复位，重新定义位置
+			 * @method      reposition
+			 * @author      三生
+			 * @anotherdate 2016-07-21
+			 * @param       {[type]}   v [description]
+			 * @return      {[type]}     [description]
+			 */
+			reposition = function(v){
+				var lC = getLeafCount(v), left=v.p.x - tree.w*(lC-1)/2;
+				v.c.forEach(function(d){
+					var w =tree.w*getLeafCount(d); 
+					left+=w; 
+					d.p = {x:left-(w+tree.w)/2, y:v.p.y+tree.h};
+					reposition(d);
+				});		
+			}	
+			/**
+			 * 初始化
+			 * @method      initialize
+			 * @author      三生
+			 * @anotherdate 2016-07-21
+			 * @return      {[type]}   [description]
+			 */
+			initialize = function(){
+				
+				d3.select("body").append("svg").attr("width", svgW).attr("height", svgH).attr('id','treesvg');
+
+				d3.select("#treesvg").append('g').attr('id','g_lines').selectAll('line').data(tree.getEdges()).enter().append('line').attr('x1',function(d){ 
+						return d.p1.x;
+					}).attr('y1',function(d){ 
+						return d.p1.y;
+					})
+					.attr('x2',function(d){ 
+						return d.p2.x;
+					}).attr('y2',function(d){ 
+						return d.p2.y;
+					});
+
+				d3.select("#treesvg").append('g').attr('id','g_circles').selectAll('circle').data(tree.getVertices()).enter()
+					.append('circle').attr('cx',function(d){ 
+						return d.p.x;
+					}).attr('cy',function(d){ 
+						return d.p.y;
+					}).attr('r',vRad).on('click',function(d){
+						return tree.addLeaf(d.v);
+					}).attr('v',function(d){ 
+						return d.v;
+					});
+				
+				//tree.addLeaf(0);
+			}
+
+
+			initialize();
+			return tree;
+		}
+		var tree= tree();
+	</script>
+</body>
+</html>

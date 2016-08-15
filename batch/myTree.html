@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>自建一棵树</title>
+	<style type="text/css">
+		body{margin:0;padding:0;}
+	</style>
+</head>
+<body>
+	<script src="framework/d3.v3.min.js"></script>
+	<script src='js/training-data.js'></script>
+	<script type="text/javascript">
+		var width = 800,height = 700;
+
+		var data = treeData[0],
+			svg  = d3.select('body').append('svg').attr('width',width).attr('height',height),
+			svgGroup = svg.append('g'),
+			tree = d3.layout.tree().size([width,height]);
+
+		var nodes = tree.nodes(data),
+			links = tree.links(nodes);
+		var node = svgGroup.selectAll('g.nodes').data(nodes).enter().append('g').attr('class','nodes').attr("transform", function(d){ 
+			return "translate(" + 0 + "," + 380 + ")";
+		});
+		//为节点添加圆形标记,如果有子节点为红色，否则绿色
+		node.append("circle")
+		.attr("fill",function(d){return d.children==null?"#0F0":"#F00";})
+		.attr("r", function(d){return d.children==null?5:d.children.length+5;});
+		//为节点添加说明文字
+	</script>
+</body>
+</html>
