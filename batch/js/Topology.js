@@ -127,9 +127,6 @@
 	      	});
 
 	        svgLink.classed('opaci',function(d){
-	        	if(d.Ancestor.indexOf('tempRepeat-')>-1||d.Descendant.indexOf('tempRepeat-')>-1){
-	        		console.log(d.Ancestor,d.Descendant);
-	        	}
 	        	return (obj !== d.source && obj !== d.target);
 	        })
 	    }).on('mouseout', function(obj) {
