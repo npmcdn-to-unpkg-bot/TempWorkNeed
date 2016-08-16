@@ -18,10 +18,11 @@
 	    .force("fy", d3.forceY(0))
 	    .force("collide", d3.forceCollide(100))
 	    .on("tick", ticked);
+	simulation.stop();
 
 	var svgGroup = svg.append('g'),
-		link = svgGroup.selectAll(".link"),
-    	node = svgGroup.selectAll(".node");
+		svgLink = svgGroup.selectAll(".link"),
+    	svgNode = svgGroup.selectAll(".node");
 
 	svg.append("g").append("marker")
     .attr("id", "suit")
@@ -54,7 +55,13 @@
     		}
     	}
     }
-	
+	/**
+	 * 初始化数据
+	 * @method      initForceData
+	 * @author      三生
+	 * @anotherdate 2016-08-16
+	 * @return      {[type]}      [description]
+	 */
 	function initForceData(){
 
 	}
@@ -66,7 +73,7 @@
 	 * @return      {[type]}     [description]
 	 */
 	function reStartForce(){
-		//setNodesKins();
+		setNodesKins();
 		var resultLinks = links;//rebuildLinks(repeatArr,links);
 
 		/**
@@ -83,14 +90,22 @@
 			link.target = nodeById.get(link.Descendant); // intermediate node
 		});
 
+		
+
 		simulation.nodes(nodes);
 		simulation.force("link").links(resultLinks);
 
-	  	link = link.data(resultLinks)
+		svgGroup.selectAll(".link").remove();
+    	svgGroup.selectAll(".node").remove();
+
+    	svgLink = svgGroup.selectAll(".link");
+    	svgNode = svgGroup.selectAll(".node");
+
+	  	svgLink = svgLink.data(resultLinks)
 	    .enter().insert("polyline")
 	    .attr("class", "link").attr("marker-end", 'url(#suit)');
 
-	  	node = node.data(nodes)
+	  	svgNode = svgNode.data(nodes)
 	    	.enter().insert("g")
 			.attr("class", "node")
 			.attr("x", -75)
@@ -104,26 +119,26 @@
 	      	if(obj.ID.indexOf('tempRepeat-')>-1){
 	      		return;
 	      	}
-	      	node.classed('opaci',function(d){
+	      	svgNode.classed('opaci',function(d){
 	      		var patt1 = new RegExp('^'+obj.ID+',|,'+obj.ID+',');
 	      		return (obj !== d
 	                     && !patt1.test(d.parents)
 	                     && !patt1.test(d.children));
 	      	});
 
-	        link.classed('opaci',function(d){
+	        svgLink.classed('opaci',function(d){
 	        	if(d.Ancestor.indexOf('tempRepeat-')>-1||d.Descendant.indexOf('tempRepeat-')>-1){
 	        		console.log(d.Ancestor,d.Descendant);
 	        	}
 	        	return (obj !== d.source && obj !== d.target);
 	        })
 	    }).on('mouseout', function(obj) {
-	      	node.classed('opaci',false);
-	      	link.classed('opaci',false);
+	      	svgNode.classed('opaci',false);
+	      	svgLink.classed('opaci',false);
 	    });
-	    console.log(link,node)
+	    console.log(svgLink._groups[0],svgNode._groups[0])
 		//批次title
-		node.append("rect").attr('width',function(d){
+		svgNode.append("rect").attr('width',function(d){
 				if(d.ID.indexOf('tempRepeat-')<0){
 	      			return 150;
 	      		}else{
@@ -137,7 +152,7 @@
 	  		} 
 		}).attr('fill','#37cfad');
 
-		node.append("text")
+		svgNode.append("text")
 			.attr("x", '2em')
 			.attr("y", "1.5em")
 			.attr("text-anchor", function(d) { return "start"})
@@ -149,7 +164,7 @@
 	      		} 
 	      	});
 	//批次名稱
-		node.append("rect").attr('y',32).attr('width',function(d){
+		svgNode.append("rect").attr('y',32).attr('width',function(d){
 				if(d.ID.indexOf('tempRepeat-')<0){
 	      			return 150;
 	      		}else{
@@ -163,7 +178,7 @@
 	  		} 
 		}).attr('fill','#fff').attr('stroke','#dedede').attr('stroke-width',1);
 
-		node.append("text")
+		svgNode.append("text")
 			.attr("x", '2em')
 			.attr("y", "4em")
 			.attr("text-anchor", function(d) { return "start"})
@@ -175,10 +190,11 @@
 	      		} 
 	      	});
 
-		node.call(d3.drag()
+		svgNode.call(d3.drag()
 	          .on("start", dragstarted)
 	          .on("drag", dragged)
 	          .on("end", dragended))
+		simulation.restart();
 	}
 
     
@@ -196,7 +212,7 @@
 				nodes[i].y=nodes[i].w*200;
 			}
 		}
-   		link.attr('points',function(d){
+   		svgLink.attr('points',function(d){
    			var m = 87;
    			if(d.Descendant.indexOf('tempRepeat-')>-1){//d.Ancestor.indexOf('tempRepeat-')<0||
 				return d.source.x+','+d.source.y+' '+
@@ -212,17 +228,9 @@
 					d.target.x+','+(d.target.y);
    			;
    		});
-	  node.attr("transform", function(d) { 
-	  	return "translate(" + (d.x-75) + "," + d.y + ")";; 
-	  }).attr('fx',function(d){
-	  	if(d.ID ==10 ){
-	  		return '100'
-	  	}
-	  }).attr('fy',function(d){
-	  	if(d.ID ==10 ){
-	  		return '100'
-	  	}
-	  });
+		svgNode.attr("transform", function(d) { 
+			return "translate(" + (d.x-75) + "," + d.y + ")";; 
+		});
 	}
 
 	var zoom = d3.zoom()
