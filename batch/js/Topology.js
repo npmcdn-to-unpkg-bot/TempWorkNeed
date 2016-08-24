@@ -25,15 +25,15 @@
     	svgNode = svgGroup.selectAll(".node");
 
 	svg.append("g").append("marker")
-    .attr("id", "suit")
-    .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 10)
-    .attr("refY", 0)
-    .attr("markerWidth", 6)
-    .attr("markerHeight", 6)
-    .attr("orient", "auto")
-    .append("path")
-    .attr("d", "M0,-5L10,0L0,5");
+	    .attr("id", "suit")
+	    .attr("viewBox", "0 -5 10 10")
+	    .attr("refX", 10)
+	    .attr("refY", 0)
+	    .attr("markerWidth", 6)
+	    .attr("markerHeight", 6)
+	    .attr("orient", "auto")
+	    .append("path")
+	    .attr("d", "M0,-5L10,0L0,5");
 
     /**
      * 设置节点间的两两关联项
@@ -66,6 +66,37 @@
 
 	}
 	/**
+	 * 设置节点层级	 * @method      setNodeLeave
+	 * @author      三生
+	 * @anotherdate 2016-08-24
+	 * @param       {[type]}     links [description]
+	 */
+	var nodeW = [],minW = 0;
+	function setNodeLeave(linkArr){
+        //给任意点设置一个初始层级
+        nodes[0]['w'] = 10;
+        var setLeaveState = true,n = 0;
+        do{
+        	n++;
+        	//50次还没结束应该就是数据有误了，可以通过改变数字来再次确认
+        	if(n>50){
+        		break;
+        	}
+            for(var i = 0;i<linkArr.length;i++){
+                n++;
+                setLeaveState = false;
+                if(linkArr[i]['target']['w']){
+                    linkArr[i]['source']['w'] = linkArr[i]['target']['w']-1;
+                    nodeW.push(linkArr[i]['source']['w']);
+                }else if(linkArr[i]['source']['w']){
+                    linkArr[i]['target']['w'] = linkArr[i]['source']['w']+1;
+                }else{
+                    setLeaveState = true;
+                }
+            }
+        } while (setLeaveState);
+    }
+	/**
 	 * 启动与重启力布局
 	 * @method      reStartForce
 	 * @author      三生
@@ -74,6 +105,7 @@
 	 */
 	function reStartForce(){
 		setNodesKins();
+		
 		var resultLinks = links;//rebuildLinks(repeatArr,links);
 
 		/**
@@ -90,7 +122,8 @@
 			link.target = nodeById.get(link.Descendant); // intermediate node
 		});
 
-		
+		setNodeLeave(links)
+		minW = nodeW.sort()[0]
 
 		simulation.nodes(nodes);
 		simulation.force("link").links(resultLinks);
@@ -133,7 +166,6 @@
 	      	svgNode.classed('opaci',false);
 	      	svgLink.classed('opaci',false);
 	    });
-	    console.log(svgLink._groups[0],svgNode._groups[0])
 		//批次title
 		svgNode.append("rect").attr('width',function(d){
 				if(d.ID.indexOf('tempRepeat-')<0){
@@ -160,7 +192,7 @@
 	      			return '';
 	      		} 
 	      	});
-	//批次名稱
+		//批次名稱
 		svgNode.append("rect").attr('y',32).attr('width',function(d){
 				if(d.ID.indexOf('tempRepeat-')<0){
 	      			return 150;
@@ -201,12 +233,12 @@
 	
 
 
-
+	
 	function ticked() {
 		for(var i = 0;i<nodes.length;i++){
 			if(nodes[i].w){
 
-				nodes[i].y=nodes[i].w*200;
+				nodes[i].y=(nodes[i].w-minW-1)*200;
 			}
 		}
    		svgLink.attr('points',function(d){
