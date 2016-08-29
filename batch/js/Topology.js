@@ -72,6 +72,8 @@
 	 * @param       {[type]}     links [description]
 	 */
 	var nodeW = [],minW = 0;
+
+	
 	function setNodeLeave(linkArr){
         //给任意点设置一个初始层级
         nodes[0]['w'] = 10;
