@@ -7,8 +7,8 @@
       	bilinks = [];
 
     var svg = d3.select("svg"),
-    width = +svg.attr("width"),
-    height = +svg.attr("height");
+    	width = +svg.attr("width"),
+    	height = +svg.attr("height");
 
     var simulation = d3.forceSimulation()
 	    .force("charge", d3.forceManyBody().strength(-500))
@@ -18,6 +18,7 @@
 	    .force("fy", d3.forceY(0))
 	    .force("collide", d3.forceCollide(100))
 	    .on("tick", ticked);
+
 	simulation.stop();
 
 	var svgGroup = svg.append('g'),
@@ -56,16 +57,6 @@
     	}
     }
 	/**
-	 * 初始化数据
-	 * @method      initForceData
-	 * @author      三生
-	 * @anotherdate 2016-08-16
-	 * @return      {[type]}      [description]
-	 */
-	function initForceData(){
-
-	}
-	/**
 	 * 设置节点层级	 * @method      setNodeLeave
 	 * @author      三生
 	 * @anotherdate 2016-08-24
@@ -87,11 +78,17 @@
             for(var i = 0;i<linkArr.length;i++){
                 n++;
                 setLeaveState = false;
-                if(linkArr[i]['target']['w']){
-                    linkArr[i]['source']['w'] = linkArr[i]['target']['w']-1;
-                    nodeW.push(linkArr[i]['source']['w']);
-                }else if(linkArr[i]['source']['w']){
-                    linkArr[i]['target']['w'] = linkArr[i]['source']['w']+1;
+                var tempSource = linkArr[i]['source'],tempTarget = linkArr[i]['target'];
+                if(typeof(tempSource)=='undefined'||typeof(tempTarget)=='undefined'){
+					linkArr.splice(i,1);
+					setLeaveState = true;
+					break;
+                }
+                if(tempTarget['w']){
+                    tempSource['w'] = tempTarget['w']-1;
+                    nodeW.push(tempSource['w']);
+                }else if(tempSource['w']){
+                    tempTarget['w'] = tempSource['w']+1;
                 }else{
                     setLeaveState = true;
                 }
@@ -106,7 +103,7 @@
 	 * @return      {[type]}     [description]
 	 */
 	function reStartForce(){
-		setNodesKins();
+		//setNodesKins();
 		
 		var resultLinks = links;//rebuildLinks(repeatArr,links);
 
